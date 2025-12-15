@@ -1,0 +1,2 @@
+[console_scripts]
+durable-streams = durable_streams.cli:main
