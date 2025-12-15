@@ -103,7 +103,9 @@ class DurableStreamServer:
         if self._app:
             raise RuntimeError("Server already started")
 
-        self._app = web.Application()
+        # Set large client_max_size for protocol compliance (handles large payloads)
+        # Default is 1MB, but protocol tests send up to 50MB+ payloads
+        self._app = web.Application(client_max_size=100 * 1024 * 1024)  # 100MB
         self._app.router.add_route("*", "/{path:.*}", self._handle_request)
 
         self._runner = web.AppRunner(self._app)
@@ -533,6 +535,7 @@ class DurableStreamServer:
                     # Send data event
                     await response.write(f"event: data\n".encode())
                     await response.write(encode_sse_data(data_payload).encode())
+                    await response.drain()
 
                     current_offset = message.offset
 
@@ -552,6 +555,9 @@ class DurableStreamServer:
                 await response.write(
                     encode_sse_data(json.dumps(control_data)).encode()
                 )
+
+                # Drain to ensure data is sent to client before waiting
+                await response.drain()
 
                 # Update current_offset
                 current_offset = control_offset
@@ -574,6 +580,7 @@ class DurableStreamServer:
                         await response.write(
                             encode_sse_data(json.dumps(keep_alive_data)).encode()
                         )
+                        await response.drain()
 
         except Exception:
             pass  # Connection closed
