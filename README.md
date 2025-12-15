@@ -216,12 +216,49 @@ pytest tests/test_sqlite_store.py -v
 
 ## Running Against Official Conformance Tests
 
-1. Start the server:
+This implementation has been tested against the official `@durable-streams/conformance-tests` package
+and **passes all 108 tests**.
+
+1. Clone the official durable-streams repository:
+```bash
+git clone https://github.com/durable-streams/durable-streams.git
+cd durable-streams
+pnpm install && pnpm build
+```
+
+2. Start this Python server:
 ```bash
 python run_conformance_tests.py --server-only
 ```
 
-2. In another terminal, run the official conformance tests from the durable-streams repository.
+3. Create a test file `packages/server/test/python-server-conformance.test.ts`:
+```typescript
+import { describe } from "vitest"
+import { runConformanceTests } from "@durable-streams/conformance-tests"
+
+describe("Python Server Implementation", () => {
+  runConformanceTests({
+    baseUrl: "http://127.0.0.1:4437",
+  })
+})
+```
+
+4. Run the conformance tests:
+```bash
+pnpm exec vitest run packages/server/test/python-server-conformance.test.ts
+```
+
+### Test Results
+```
+✓ |server| packages/server/test/python-server-conformance.test.ts (108 tests)
+   ✓ Python Server Implementation > Long-Poll Operations > should wait for new data with long-poll
+   ✓ Python Server Implementation > Chunking and Large Payloads > should handle chunk-size pagination correctly
+   ✓ Python Server Implementation > SSE Mode > should stream data events via SSE
+   ... and 105 more tests
+
+Test Files  1 passed (1)
+Tests  108 passed (108)
+```
 
 ## Protocol Compliance
 
